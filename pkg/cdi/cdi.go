@@ -67,6 +67,13 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 	for _, dev := range rPool.GetDevices() {
 		containerEdit := cdiSpecs.ContainerEdits{
 			DeviceNodes: make([]*cdiSpecs.DeviceNode, 0),
+			Hooks: []*cdiSpecs.Hook{
+				{
+					HookName: "createContainer",
+					Path:     "/sbin/ldconfig",
+					Args:     []string{"ldconfig"},
+				},
+			},
 		}
 
 		for _, spec := range rPool.GetDeviceSpecs([]string{dev.GetID()}) {

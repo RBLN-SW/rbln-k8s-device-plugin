@@ -1,0 +1,26 @@
+name: Lint
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: rbln-sw-k8s-general
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+        cache: false
+    - name: update vendor
+      run: go mod vendor
+    - name: Lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: latest
+        args: -v --timeout 5m
+        skip-cache: true

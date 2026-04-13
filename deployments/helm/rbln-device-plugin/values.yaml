@@ -1,0 +1,35 @@
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+selectorLabelsOverride: {}
+
+imagePullSecrets: []
+image:
+  repository: rebellions/k8s-device-plugin
+  pullPolicy: IfNotPresent
+  tag: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+devicePlugin:
+  priorityClassName: system-node-critical
+  updateStrategy:
+    type: RollingUpdate
+  podAnnotations: {}
+  podSecurityContext: {}
+  nodeSelector:
+    rebellions.ai/npu.present: "true"
+  tolerations: []
+  affinity: {}
+  kubeletDevicePluginPath: /var/lib/kubelet/device-plugins
+  cdiRoot: /var/run/cdi
+  useGenericResourceName: false
+  containers:
+    plugin:
+      securityContext:
+        privileged: true
+      resources: {}
+      healthcheckPort: 51515

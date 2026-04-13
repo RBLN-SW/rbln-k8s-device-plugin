@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "rbln-device-plugin.fullname" . }}
+  namespace: {{ include "rbln-device-plugin.namespace" . }}
+  labels:
+    {{- include "rbln-device-plugin.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "rbln-device-plugin.selectorLabels" . | nindent 6 }}
+  {{- with .Values.devicePlugin.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "rbln-device-plugin.selectorLabels" . | nindent 8 }}
+      {{- with .Values.devicePlugin.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.devicePlugin.priorityClassName }}
+      priorityClassName: {{ .Values.devicePlugin.priorityClassName }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "rbln-device-plugin.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.devicePlugin.podSecurityContext | nindent 8 }}
+      containers:
+      - name: plugin
+        image: {{ include "rbln-device-plugin.fullimage" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["rbln-device-plugin"]
+        securityContext:
+          {{- toYaml .Values.devicePlugin.containers.plugin.securityContext | nindent 10 }}
+        resources:
+          {{- toYaml .Values.devicePlugin.containers.plugin.resources | nindent 10 }}
+        {{- if (gt (int .Values.devicePlugin.containers.plugin.healthcheckPort) 0) }}
+        livenessProbe:
+          grpc:
+            port: {{ .Values.devicePlugin.containers.plugin.healthcheckPort }}
+            service: liveness
+          failureThreshold: 3
+          periodSeconds: 10
+        {{- end }}
+        env:
+        - name: CDI_ROOT
+          value: {{ .Values.devicePlugin.cdiRoot | quote }}
+        - name: KUBELET_DEVICE_PLUGIN_PATH
+          value: {{ .Values.devicePlugin.kubeletDevicePluginPath | quote }}
+        - name: USE_GENERIC_RESOURCE_NAME
+          value: {{ .Values.devicePlugin.useGenericResourceName | quote }}
+        - name: HEALTHCHECK_PORT
+          value: {{ .Values.devicePlugin.containers.plugin.healthcheckPort | quote }}
+        volumeMounts:
+        - name: device-plugins
+          mountPath: {{ .Values.devicePlugin.kubeletDevicePluginPath | quote }}
+        - name: cdi
+          mountPath: {{ .Values.devicePlugin.cdiRoot | quote }}
+        - name: host-dev
+          mountPath: /dev
+        - name: host-run-rbln
+          mountPath: /run/rbln
+        - name: host-usr-bin
+          mountPath: /host/usr/bin
+          readOnly: true
+      volumes:
+      - name: device-plugins
+        hostPath:
+          path: {{ .Values.devicePlugin.kubeletDevicePluginPath | quote }}
+      - name: cdi
+        hostPath:
+          path: {{ .Values.devicePlugin.cdiRoot | quote }}
+      - name: host-dev
+        hostPath:
+          path: /dev
+      - name: host-run-rbln
+        hostPath:
+          path: /run/rbln
+      - name: host-usr-bin
+        hostPath:
+          path: /usr/bin
+      {{- with .Values.devicePlugin.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.devicePlugin.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.devicePlugin.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

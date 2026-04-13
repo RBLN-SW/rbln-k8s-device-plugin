@@ -1,0 +1,17 @@
+name: Manifests Checks
+
+on:
+  workflow_call:
+
+jobs:
+  # Check manifests
+  helm-lint:
+    name: helm lint
+    runs-on: rbln-sw-k8s-general
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+      - uses: azure/setup-helm@v4
+        name: Setup Helm
+      - name: Run helm lint
+        run: helm lint deployments/helm/rbln-device-plugin

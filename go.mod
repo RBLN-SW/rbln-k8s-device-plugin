@@ -8,13 +8,11 @@ require (
 	github.com/spf13/pflag v1.0.9
 	github.com/urfave/cli/v2 v2.25.3
 	google.golang.org/grpc v1.72.2
-	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.35.0
 	k8s.io/component-base v0.35.0
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kubelet v0.35.0
 	tags.cncf.io/container-device-interface v0.8.0
-	tags.cncf.io/container-device-interface/specs-go v0.8.0
 )
 
 require (
@@ -63,4 +61,5 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
+	tags.cncf.io/container-device-interface/specs-go v0.8.0 // indirect
 )

@@ -84,8 +84,6 @@ github.com/prometheus/common v0.66.1 h1:h5E0h5/Y8niHc5DlaLlWLArTQI7tMrsfQjHV+d9Z
 github.com/prometheus/common v0.66.1/go.mod h1:gcaUsgf3KfRSwHY4dIMXLPV0K/Wg1oZ8+SbZk/HH/dA=
 github.com/prometheus/procfs v0.16.1 h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzMyRg=
 github.com/prometheus/procfs v0.16.1/go.mod h1:teAbpZRB1iIAJYREa1LsoWUXykVXA1KlTmWl8x/U+Is=
-github.com/rbln-sw/rblnlib-go v0.1.0 h1:6z4kNMMiCEmacmTryhYlvcB6KHK5M343/zm0OCsUX/M=
-github.com/rbln-sw/rblnlib-go v0.1.0/go.mod h1:UFAsr6sIXnSe2BIJi2GCMm2/dHvFC+GnCkh5rwv4H0Y=
 github.com/rbln-sw/rblnlib-go v0.3.0 h1:ble15b6aiPD2uNk6jAnOKXEbF2jEbWkxCnTb499hBtw=
 github.com/rbln-sw/rblnlib-go v0.3.0/go.mod h1:UFAsr6sIXnSe2BIJi2GCMm2/dHvFC+GnCkh5rwv4H0Y=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=

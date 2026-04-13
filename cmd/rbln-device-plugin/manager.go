@@ -56,7 +56,11 @@ func (m *Manager) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("create kubelet socket watcher: %w", err)
 	}
-	defer kubeletWatcher.Close()
+	defer func() {
+		if err := kubeletWatcher.Close(); err != nil {
+			klog.ErrorS(err, "failed to close kubelet socket watcher")
+		}
+	}()
 
 	if err := kubeletWatcher.Add(m.config.flags.kubeletDevicePluginPath); err != nil {
 		return fmt.Errorf("watch kubelet device-plugin directory %s: %w", m.config.flags.kubeletDevicePluginPath, err)

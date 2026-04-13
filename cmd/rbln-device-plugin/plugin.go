@@ -310,7 +310,11 @@ func (p *ResourcePlugin) register(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("connect to kubelet socket %s: %w", p.kubeletSocket, err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			klog.ErrorS(err, "failed to close kubelet registration connection", "resourceName", p.resourceName, "socketPath", p.kubeletSocket)
+		}
+	}()
 
 	client := pluginapi.NewRegistrationClient(conn)
 	request := &pluginapi.RegisterRequest{

@@ -1,0 +1,44 @@
+name: Build and push image
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        type: string
+        description: Registry address
+        required: true
+      image_repository:
+        type: string
+        description: Full image repository
+        required: true
+      image_tag:
+        type: string
+        description: The tag of the image to push
+        required: true
+    secrets:
+      registry_id:
+        description: Registry login ID
+        required: true
+      registry_password:
+        description: Registry login password
+        required: true
+
+jobs:
+  image-build-push:
+    runs-on: sw-cloud-cluster-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.registry_password }}" | docker login "${{ inputs.registry }}" -u "${{ secrets.registry_id }}" --password-stdin
+
+      - name: Build and push image
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -f deployments/container/Makefile build push \
+            IMAGE_NAME="${{ inputs.image_repository }}" \
+            IMAGE_TAG="${{ inputs.image_tag }}" \
+            VERSION="${{ inputs.image_tag }}"

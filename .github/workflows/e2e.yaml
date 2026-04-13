@@ -1,0 +1,102 @@
+name: E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      image_repository:
+        type: string
+        description: Full image repository used for helm install
+        required: true
+      image_tag:
+        type: string
+        description: Image tag used for helm install
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: sw-cloud-cluster-ci
+    timeout-minutes: 60
+    env:
+      IMAGE_REPOSITORY: ${{ inputs.image_repository }}
+      IMAGE_TAG: ${{ inputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install helm chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm upgrade -i \
+            --create-namespace \
+            --wait \
+            --timeout 600s \
+            --namespace rbln-device-plugin \
+            --set image.repository="${IMAGE_REPOSITORY}" \
+            --set image.tag="${IMAGE_TAG}" \
+            --set image.pullPolicy=Always \
+            rbln-device-plugin \
+            ./deployments/helm/rbln-device-plugin
+
+      - name: Test two-pods-single-npu
+        id: tc_two_pods_single_npu
+        continue-on-error: true
+        shell: bash
+        run: bash test/e2e/cases/two-pods-single-npu.sh
+
+      - name: Test single-pod-double-npu
+        id: tc_single_pod_double_npu
+        continue-on-error: true
+        shell: bash
+        run: bash test/e2e/cases/single-pod-double-npu.sh
+
+      - name: Dump debug info for failed test cases
+        if: always()
+        shell: bash
+        env:
+          TC_TWO_PODS_SINGLE_NPU: ${{ steps.tc_two_pods_single_npu.outcome }}
+          TC_SINGLE_POD_DOUBLE_NPU: ${{ steps.tc_single_pod_double_npu.outcome }}
+        run: |
+          set -euo pipefail
+          outcomes="${TC_TWO_PODS_SINGLE_NPU} ${TC_SINGLE_POD_DOUBLE_NPU}"
+          if [[ "${outcomes}" != *"failure"* ]]; then
+            echo "No failed test case."
+            exit 0
+          fi
+
+          kubectl get pods -A -o wide || true
+          kubectl get events -A --sort-by=.metadata.creationTimestamp | tail -n 300 || true
+          kubectl get nodes -o json | jq '.items[].status.allocatable' || true
+
+      - name: Teardown e2e environment
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash test/e2e/teardown-e2e.sh
+
+      - name: Fail job if any test case failed
+        if: always()
+        shell: bash
+        env:
+          TC_TWO_PODS_SINGLE_NPU: ${{ steps.tc_two_pods_single_npu.outcome }}
+          TC_SINGLE_POD_DOUBLE_NPU: ${{ steps.tc_single_pod_double_npu.outcome }}
+        run: |
+          set -euo pipefail
+
+          failed_cases=()
+          [[ "${TC_TWO_PODS_SINGLE_NPU}" == "failure" ]] && failed_cases+=("two-pods-single-npu")
+          [[ "${TC_SINGLE_POD_DOUBLE_NPU}" == "failure" ]] && failed_cases+=("single-pod-double-npu")
+
+          if [[ ${#failed_cases[@]} -gt 0 ]]; then
+            echo "Failed test cases: ${failed_cases[*]}"
+            exit 1
+          fi
+
+          echo "All test cases passed"

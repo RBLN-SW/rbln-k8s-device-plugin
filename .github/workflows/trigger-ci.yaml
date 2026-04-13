@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches: [main]
+  
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yaml
+    secrets: inherit
+
+  manifests-check:
+    uses: ./.github/workflows/manifests.check.yaml
+    secrets: inherit
+  image-build-push:
+    uses: ./.github/workflows/image-build-push.yaml
+    with:
+      registry: harbor.k8s.rebellions.in
+      image_repository: ${{ vars.IMAGE_REPOSITORY }}
+      image_tag: ${{ github.sha }}
+    secrets:
+      registry_id: ${{ secrets.HARBOR_USERNAME }}
+      registry_password: ${{ secrets.HARBOR_PASSWORD }}
+
+  e2e:
+    needs: image-build-push
+    uses: ./.github/workflows/e2e.yaml
+    secrets: inherit
+    with:
+      image_repository: ${{ vars.IMAGE_REPOSITORY }}
+      image_tag: ${{ github.sha }}
+

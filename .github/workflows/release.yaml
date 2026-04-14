@@ -1,0 +1,73 @@
+name: Release Draft
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-push-image:
+    uses: ./.github/workflows/image-build-push.yaml
+    with:
+      registry: docker.io
+      image_repository: rebellions/k8s-device-plugin
+      image_tag: ${{ github.ref_name }}
+    secrets:
+      registry_id: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry_password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+
+  package-helm-chart:
+    name: Package Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: latest
+      - name: Package chart
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          mkdir -p dist
+          helm package deployments/helm/rbln-device-plugin \
+            --destination dist \
+            --version "$VERSION" \
+            --app-version "$TAG"
+      - name: Upload chart artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-${{ github.ref_name }}
+          path: dist/*.tgz
+
+  draft-release:
+    needs: [build-and-push-image, package-helm-chart]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download chart artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-chart-${{ github.ref_name }}
+          path: dist
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          cat <<EOF > release_notes.md
+          Draft release for ${GITHUB_REF_NAME}.
+          EOF
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: ${{ github.ref_name }}
+          name: "RBLN Device Plugin for NPUs ${{ github.ref_name }} Release "
+          body_path: release_notes.md
+          files: dist/*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
